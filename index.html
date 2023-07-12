@@ -1,41 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+
 <head>
-     <meta name="viewport" content="initial-scale=0.333334, minimum-scale=0.333334, maximum-scale=0.333334, user-scalable=no">
-<meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>WebRTC Study</title>
 </head>
+
 <body>
-    <video autoplay muted playsinline="playsinline" id="video" controls></video><br/>
-    youtubeドットバイドット<br/>
-    <input type="file" id="filename" value="ファイル読み込み"/><br/>
-    <input type="button" value="停止" onClick="pause()"/><br/>
-    <input type="button" value="速く" onClick="changeSpeed(0.1)"/>
-    <input type="button" value="遅く" onClick="changeSpeed(-0.1)"/><br/>
-    再生位置  :<span id="position">-</span><br/>
-    再生速度  : <span id="speed">1.0</span><br/>
-    ファイル名 :<span id="filename">none</span><br/>
-    <body style="background-color:#000000;"><br/>
+    <div>
+        <!-- 接続元の動画と音声を表示するためのVideoタグ -->
+        <video id="local-video" autoplay muted style="width: 160px; height: 120px; border: 1px solid black;"></video>
+    </div>
 
-    <script>
+    <div>
+        <!-- 接続先の動画と音声を表示するためのVideoタグ -->
+        <video id="remote-video" autoplay style="width: 160px; height: 120px; border: 1px solid black;"></video>
+    </div>
 
-    function init(){
-        var f = document.getElementById("filename");
-        f.addEventListener( "change", function (event) {
-            var URL = URL || webkitURL;
-            var file = event.target.files[0];
-            document.querySelector('video').src = URL.createObjectURL(file);
-            document.getElementById('filename').innerHTML = document.querySelector('video').src;
-        }, false );
+    <!-- 接続を開始するためのボタン -->
+    <button id="btn-connect">connect</button>
 
-        var v = document.getElementById("video");
-        v.addEventListener("timeupdate", function(){
-            document.getElementById("position").innerHTML = v.currentTime;
-            document.getElementById("speed").innerHTML = v.playbackRate.toFixed(1);
-        }, false);
-    }
-
-
-    init();
-    </script>
+    <script type='text/javascript' src='./index.js'></script>
 </body>
+
 </html>
