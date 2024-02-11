@@ -19,7 +19,7 @@
     <body style="background-color:#000000;"><br/>
 
 
-     <iframe width="640" height="360" src="url" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"  muted playsinline="playsinline" name="cFrame" ></iframe>
+     <iframe width="640" height="360"  title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"  muted playsinline="playsinline" name="cFrame" ></iframe>
     
      <script>
 
@@ -33,10 +33,11 @@
         }, false );
 
         var v = document.getElementById("name");
-        v.addEventListener("timeupdate", function(){
-          document.getElementById("cFrame").src = name.createObjectURL(name);
-            document.getElementById("position").innerHTML = v.currentTime;
-            document.getElementById("speed").innerHTML = v.playbackRate.toFixed(1);
+        v.addEventListener( "change", function (event) {
+            var URL = URL || webkitURL;
+            var file = event.target.files[0];
+            document.querySelector('iframe').src = URL.createObjectURL(file);
+             document.getElementById('name').innerHTML = document.querySelector('iframe').src;
         }, false);
     }
 
