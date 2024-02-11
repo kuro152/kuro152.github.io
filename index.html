@@ -22,6 +22,26 @@
     <iframe width="1920" height="1080" src="https://www.youtube.com/embed/ECEuUVJALmQ?si=aDfZyTsYrDU1bIhN?vq=highres" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
      <iframe width="3840" height="2160" src="https://www.youtube.com/embed/AnllBoU6iJg?si=qlK2d358hSHZmG9P?vq=highres" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
+         <div id="ytplayer"></div>
+
+<script>
+  // Load the IFrame Player API code asynchronously.
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/player_api";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  // Replace the 'ytplayer' element with an <iframe> and
+  // YouTube player after the API code downloads.
+  var player;
+  function onYouTubePlayerAPIReady() {
+    player = new YT.Player('ytplayer', {
+      height: '360',
+      width: '640',
+      videoId: 'M7lc1UVf-VE'
+    });
+  }
+</script>
          
      <script>
 
@@ -34,13 +54,7 @@
             document.getElementById('filename').innerHTML = document.querySelector('video').src;
         }, false );
 
-        var v = document.getElementById("name");
-        v.addEventListener( "change", function (event) {
-            var URL = URL || webkitURL;
-            var file = event.target.files[0];
-            document.querySelector('iframe').src = URL.createObjectURL(file);
-             document.getElementById('name').innerHTML = document.querySelector('iframe').src;
-        }, false);
+        
     }
 
 
