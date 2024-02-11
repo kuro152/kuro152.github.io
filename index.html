@@ -13,9 +13,15 @@
     再生速度  : <span id="speed">1.0</span><br/>
     ファイル名 :<span id="filename">none</span><br/>
      <span id="name">none</span><br/>
+     <div>
+    <button>送信</button>
+     </div>
     <body style="background-color:#000000;"><br/>
 
-    <script>
+
+     <iframe width="640" height="360" src="name" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" autoplay muted playsinline="playsinline" ></iframe>
+    
+     <script>
 
     function init(){
         var f = document.getElementById("filename");
@@ -26,7 +32,7 @@
             document.getElementById('filename').innerHTML = document.querySelector('video').src;
         }, false );
 
-        var v = document.getElementById("video");
+        var v = document.getElementById("name");
         v.addEventListener("timeupdate", function(){
             document.getElementById("position").innerHTML = v.currentTime;
             document.getElementById("speed").innerHTML = v.playbackRate.toFixed(1);
