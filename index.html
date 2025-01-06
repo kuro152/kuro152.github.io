@@ -17,7 +17,7 @@
   
      <iframe width="1920" height="1080" src="https://www.youtube.com/embed/videoseries?si=NkiMgcoyRRei5UV5&amp;list=PLHlvEXOOEsQkp1KOjNZ7UoxwFg1yYjZOx" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
      <iframe width="3840" height="2160" src="https://www.youtube.com/embed/videoseries?si=-_M1-VPye2gCo-7_&amp;list=PLHlvEXOOEsQlAIlhF-K0BXHAPT5QrLw9L" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-  　　<iframe src="https://player.twitch.tv/?channel=crazyraccoonyy&parent=www.example.com" frameborder="0" allowfullscreen="true" scrolling="no" height="378" width="620"></iframe>
+  　　
          
      <script>
 
@@ -43,3 +43,88 @@
 </body>
 </html>
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パラメトリック・イコライザー付き動画プレイヤー</title>
+    <style>
+        body { background-color: #111; color: #fff; font-family: Arial, sans-serif; text-align: center; }
+        .controls { margin-top: 20px; }
+        input[type="range"] { width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>パラメトリック・イコライザー付き動画プレイヤー</h1>
+    
+    <!-- 動画のアップロード -->
+    <input type="file" id="videoFile" accept="video/*"><br><br>
+    <video id="video" controls width="640" height="360"></video>
+
+    <!-- イコライザーのコントロール -->
+    <div class="controls">
+        <label>周波数: <span id="freqValue">1000</span> Hz</label><br>
+        <input type="range" id="frequency" min="20" max="20000" value="1000"><br><br>
+
+        <label>ゲイン: <span id="gainValue">0</span> dB</label><br>
+        <input type="range" id="gain" min="-30" max="30" value="0"><br><br>
+
+        <label>帯域幅: <span id="bandwidthValue">1.0</span> oct</label><br>
+        <input type="range" id="bandwidth" min="0.1" max="5.0" step="0.1" value="1.0">
+    </div>
+
+    <script>
+        // 要素を取得
+        const video = document.getElementById('video');
+        const fileInput = document.getElementById('videoFile');
+        const freqSlider = document.getElementById('frequency');
+        const gainSlider = document.getElementById('gain');
+        const bandwidthSlider = document.getElementById('bandwidth');
+        const freqValue = document.getElementById('freqValue');
+        const gainValue = document.getElementById('gainValue');
+        const bandwidthValue = document.getElementById('bandwidthValue');
+
+        // AudioContextとフィルターをセットアップ
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaElementSource(video);
+        const eqFilter = audioContext.createBiquadFilter();
+        eqFilter.type = 'peaking';  // パラメトリック・イコライザー
+        eqFilter.frequency.value = 1000;  // 初期周波数
+        eqFilter.gain.value = 0;  // 初期ゲイン
+        eqFilter.Q.value = 1.0;  // 帯域幅
+
+        // AudioContextの接続
+        source.connect(eqFilter).connect(audioContext.destination);
+
+        // ファイルが選択されたときの処理
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                video.src = url;
+                video.play();
+            }
+        });
+
+        // イコライザーのスライダーイベント
+        freqSlider.addEventListener('input', () => {
+            const freq = parseFloat(freqSlider.value);
+            eqFilter.frequency.value = freq;
+            freqValue.textContent = freq;
+        });
+
+        gainSlider.addEventListener('input', () => {
+            const gain = parseFloat(gainSlider.value);
+            eqFilter.gain.value = gain;
+            gainValue.textContent = gain;
+        });
+
+        bandwidthSlider.addEventListener('input', () => {
+            const bandwidth = parseFloat(bandwidthSlider.value);
+            eqFilter.Q.value = bandwidth;
+            bandwidthValue.textContent = bandwidth;
+        });
+    </script>
+</body>
+</html>
