@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube音声イコライザ</title>
+    <title>YouTube音声イコライザー</title>
     <style>
         body {
             background-color: #000;
@@ -33,8 +33,20 @@
     <div id="sliders"></div>
 
     <script>
-        let audioElement;
-        
+        let audioContext, audioElement, sourceNode, biquadFilters = [];
+        const defaultSettings = [
+            { freq: 31, gain: 0, Q: 1 },
+            { freq: 63, gain: 0, Q: 1 },
+            { freq: 125, gain: 0, Q: 1 },
+            { freq: 250, gain: 0, Q: 1 },
+            { freq: 500, gain: 0, Q: 1 },
+            { freq: 1000, gain: 0, Q: 1 },
+            { freq: 2000, gain: 0, Q: 1 },
+            { freq: 4000, gain: 0, Q: 1 },
+            { freq: 8000, gain: 0, Q: 1 },
+            { freq: 16000, gain: 0, Q: 1 }
+        ];
+
         // 音声を読み込む
         async function loadAudio() {
             const url = document.getElementById('youtubeUrl').value;
@@ -54,10 +66,108 @@
                 audioElement.src = audioUrl;
                 audioElement.play();  // 音声が再生されるか確認
 
+                initAudioProcessing();
+                createControlSliders();
+
             } catch (error) {
                 alert('音声の取得に失敗しました');
                 console.error(error);
             }
+        }
+
+        // Web Audio APIの初期化
+        function initAudioProcessing() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            sourceNode = audioContext.createMediaElementSource(audioElement);
+            create10BandEqualizer();
+            connectEqualizer(sourceNode);
+        }
+
+        // 10バンドイコライザーを作成
+        function create10BandEqualizer() {
+            biquadFilters = defaultSettings.map(setting => {
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'peaking';
+                filter.frequency.value = setting.freq;
+                filter.gain.value = setting.gain;
+                filter.Q.value = setting.Q;
+                return filter;
+            });
+
+            for (let i = 0; i < biquadFilters.length - 1; i++) {
+                biquadFilters[i].connect(biquadFilters[i + 1]);
+            }
+        }
+
+        // イコライザーを接続
+        function connectEqualizer(sourceNode) {
+            sourceNode.connect(biquadFilters[0]);
+            biquadFilters[biquadFilters.length - 1].connect(audioContext.destination);
+        }
+
+        // コントロールスライダーを作成
+        function createControlSliders() {
+            const sliderContainer = document.getElementById('sliders');
+            sliderContainer.innerHTML = ''; // 既存のスライダーをクリア
+
+            defaultSettings.forEach((setting, index) => {
+                const div = document.createElement('div');
+                div.className = 'slider-container';
+
+                const label = document.createElement('span');
+                label.className = 'slider-label';
+                label.innerText = `Band ${index + 1}`;
+
+                const freqInput = createSlider('Freq', setting.freq, 20, 20000, 1, index, updateFrequency);
+                const gainInput = createSlider('Gain', setting.gain, -20, 20, 0.1, index, updateGain);
+                const qInput = createSlider('Q', setting.Q, 0.1, 10, 0.1, index, updateQ);
+
+                div.appendChild(label);
+                div.appendChild(freqInput);
+                div.appendChild(gainInput);
+                div.appendChild(qInput);
+                sliderContainer.appendChild(div);
+            });
+        }
+
+        function createSlider(name, value, min, max, step, index, onInputCallback) {
+            const container = document.createElement('span');
+            container.style.margin = '0 10px';
+
+            const label = document.createElement('span');
+            label.innerText = `${name}: ${value}`;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = min;
+            input.max = max;
+            input.step = step;
+            input.value = value;
+            input.dataset.index = index;
+            input.dataset.name = name;
+            input.addEventListener('input', (event) => {
+                label.innerText = `${name}: ${event.target.value}`;
+                onInputCallback(event);
+            });
+
+            container.appendChild(label);
+            container.appendChild(input);
+            return container;
+        }
+
+        function updateFrequency(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].frequency.value = event.target.value;
+        }
+
+        function updateGain(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].gain.value = event.target.value;
+        }
+
+        function updateQ(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].Q.value = event.target.value;
         }
     </script>
 </body>
