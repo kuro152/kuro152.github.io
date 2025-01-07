@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="initial-scale=0.333334, minimum-scale=0.333334, maximum-scale=0.333334, user-scalable=no">
-    <title>動画再生とYouTube埋め込み - イコライザー適用</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube音声イコライザー</title>
     <style>
         body {
-            background-color: #000000;
+            background-color: #000;
             color: white;
             text-align: center;
         }
@@ -23,26 +23,17 @@
     </style>
 </head>
 <body>
-    <h1>動画ファイルの読み込みと再生</h1>
-    <video autoplay muted playsinline="playsinline" id="video" controls></video><br/>
-    iPhone ドットバイドット<br/>
-    <input type="file" id="fileInput" /><br/>
-    ファイル名 : <span id="displayFilename">none</span><br/>
-    
-    <h1>YouTube動画プレイリスト</h1>
-    <div id="playerContainer"></div>
+    <h1>YouTube音声イコライザー</h1>
+    <input type="text" id="youtubeUrl" placeholder="YouTube URLを入力" size="50">
+    <button onclick="loadAudio()">音声を読み込む</button>
+    <br><br>
+    <audio id="audio" controls></audio>
 
     <h2>イコライザー設定</h2>
     <div id="sliders"></div>
 
     <script>
-        // YouTube IFrame Player API のロード
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        var player, audioContext, biquadFilters = [];
+        let audioContext, audioElement, sourceNode, biquadFilters = [];
         const defaultSettings = [
             { freq: 31, gain: 0, Q: 1 },
             { freq: 63, gain: 0, Q: 1 },
@@ -56,52 +47,48 @@
             { freq: 16000, gain: 0, Q: 1 }
         ];
 
-        // YouTubeプレイヤーの準備
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('playerContainer', {
-                height: '360',
-                width: '640',
-                videoId: 'dQw4w9WgXcQ', // 任意のYouTube動画ID
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                }
-            });
-        }
+        // 音声を読み込む
+        async function loadAudio() {
+            const url = document.getElementById('youtubeUrl').value;
+            if (!url) {
+                alert('YouTubeのURLを入力してください');
+                return;
+            }
 
-        function onPlayerReady(event) {
-            initAudioProcessing();
-            createControlSliders();
-            event.target.playVideo();
-        }
+            try {
+                const response = await fetch(`http://localhost:3000/getAudio?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                const audioUrl = data.audioUrl;
 
-        function onPlayerStateChange(event) {
-            if (event.data == YT.PlayerState.PLAYING) {
-                audioContext.resume();
+                audioElement = document.getElementById('audio');
+                audioElement.src = audioUrl;
+                initAudioProcessing();
+                createControlSliders();
+            } catch (error) {
+                alert('音声の取得に失敗しました');
+                console.error(error);
             }
         }
 
         // Web Audio APIの初期化
         function initAudioProcessing() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const audioElement = player.getIframe();
-            const mediaElementSource = audioContext.createMediaElementSource(audioElement);
+            sourceNode = audioContext.createMediaElementSource(audioElement);
             create10BandEqualizer();
-            connectEqualizer(mediaElementSource);
+            connectEqualizer(sourceNode);
         }
 
         // 10バンドイコライザーを作成
         function create10BandEqualizer() {
-            defaultSettings.forEach((setting, index) => {
+            biquadFilters = defaultSettings.map(setting => {
                 const filter = audioContext.createBiquadFilter();
                 filter.type = 'peaking';
                 filter.frequency.value = setting.freq;
                 filter.gain.value = setting.gain;
                 filter.Q.value = setting.Q;
-                biquadFilters.push(filter);
+                return filter;
             });
 
-            // フィルターをチェーン接続
             for (let i = 0; i < biquadFilters.length - 1; i++) {
                 biquadFilters[i].connect(biquadFilters[i + 1]);
             }
@@ -113,9 +100,10 @@
             biquadFilters[biquadFilters.length - 1].connect(audioContext.destination);
         }
 
-        // 各バンドの周波数、Q値、ゲインを変更するスライダーを作成
+        // コントロールスライダーを作成
         function createControlSliders() {
             const sliderContainer = document.getElementById('sliders');
+            sliderContainer.innerHTML = ''; // 既存のスライダーをクリア
 
             defaultSettings.forEach((setting, index) => {
                 const div = document.createElement('div');
@@ -137,7 +125,6 @@
             });
         }
 
-        // スライダーを生成
         function createSlider(name, value, min, max, step, index, onInputCallback) {
             const container = document.createElement('span');
             container.style.margin = '0 10px';
@@ -163,7 +150,6 @@
             return container;
         }
 
-        // 各スライダーのコールバック関数
         function updateFrequency(event) {
             const index = event.target.dataset.index;
             biquadFilters[index].frequency.value = event.target.value;
@@ -178,21 +164,6 @@
             const index = event.target.dataset.index;
             biquadFilters[index].Q.value = event.target.value;
         }
-
-        // 動画ファイル読み込みの初期化
-        function init() {
-            var fileInput = document.getElementById("fileInput");
-            fileInput.addEventListener("change", function (event) {
-                var URL = window.URL || window.webkitURL;
-                var file = event.target.files[0];
-                if (file) {
-                    document.querySelector('video').src = URL.createObjectURL(file);
-                    document.getElementById('displayFilename').innerHTML = file.name;
-                }
-            }, false);
-        }
-
-        init();
     </script>
 </body>
 </html>
