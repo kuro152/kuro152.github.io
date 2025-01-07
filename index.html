@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="initial-scale=0.333334, minimum-scale=0.333334, maximum-scale=0.333334, user-scalable=no">
-    <title>動画再生とYouTube埋め込み</title>
+    <title>動画再生とYouTube埋め込み - イコライザー適用</title>
     <style>
         body {
             background-color: #000000;
+            color: white;
+            text-align: center;
+        }
+        .slider-container {
+            margin: 10px 0;
+        }
+        .slider-label {
+            display: inline-block;
+            width: 120px;
+        }
+        input[type="number"] {
+            width: 80px;
         }
     </style>
 </head>
@@ -18,17 +30,156 @@
     ファイル名 : <span id="displayFilename">none</span><br/>
     
     <h1>YouTube動画プレイリスト</h1>
-    <iframe width="1920" height="1080" src="https://www.youtube.com/embed/videoseries?si=NkiMgcoyRRei5UV5&amp;list=PLHlvEXOOEsQkp1KOjNZ7UoxwFg1yYjZOx" 
-        title="YouTube video player" frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
-    </iframe>
-    
-    <iframe width="3840" height="2160" src="https://www.youtube.com/embed/videoseries?si=-_M1-VPye2gCo-7_&amp;list=PLHlvEXOOEsQlAIlhF-K0BXHAPT5QrLw9L" 
-        title="YouTube video player" frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
-    </iframe>
+    <div id="playerContainer"></div>
+
+    <h2>イコライザー設定</h2>
+    <div id="sliders"></div>
 
     <script>
+        // YouTube IFrame Player API のロード
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player, audioContext, biquadFilters = [];
+        const defaultSettings = [
+            { freq: 31, gain: 0, Q: 1 },
+            { freq: 63, gain: 0, Q: 1 },
+            { freq: 125, gain: 0, Q: 1 },
+            { freq: 250, gain: 0, Q: 1 },
+            { freq: 500, gain: 0, Q: 1 },
+            { freq: 1000, gain: 0, Q: 1 },
+            { freq: 2000, gain: 0, Q: 1 },
+            { freq: 4000, gain: 0, Q: 1 },
+            { freq: 8000, gain: 0, Q: 1 },
+            { freq: 16000, gain: 0, Q: 1 }
+        ];
+
+        // YouTubeプレイヤーの準備
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('playerContainer', {
+                height: '360',
+                width: '640',
+                videoId: 'dQw4w9WgXcQ', // 任意のYouTube動画ID
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            initAudioProcessing();
+            createControlSliders();
+            event.target.playVideo();
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PLAYING) {
+                audioContext.resume();
+            }
+        }
+
+        // Web Audio APIの初期化
+        function initAudioProcessing() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioElement = player.getIframe();
+            const mediaElementSource = audioContext.createMediaElementSource(audioElement);
+            create10BandEqualizer();
+            connectEqualizer(mediaElementSource);
+        }
+
+        // 10バンドイコライザーを作成
+        function create10BandEqualizer() {
+            defaultSettings.forEach((setting, index) => {
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'peaking';
+                filter.frequency.value = setting.freq;
+                filter.gain.value = setting.gain;
+                filter.Q.value = setting.Q;
+                biquadFilters.push(filter);
+            });
+
+            // フィルターをチェーン接続
+            for (let i = 0; i < biquadFilters.length - 1; i++) {
+                biquadFilters[i].connect(biquadFilters[i + 1]);
+            }
+        }
+
+        // イコライザーを接続
+        function connectEqualizer(sourceNode) {
+            sourceNode.connect(biquadFilters[0]);
+            biquadFilters[biquadFilters.length - 1].connect(audioContext.destination);
+        }
+
+        // 各バンドの周波数、Q値、ゲインを変更するスライダーを作成
+        function createControlSliders() {
+            const sliderContainer = document.getElementById('sliders');
+
+            defaultSettings.forEach((setting, index) => {
+                const div = document.createElement('div');
+                div.className = 'slider-container';
+
+                const label = document.createElement('span');
+                label.className = 'slider-label';
+                label.innerText = `Band ${index + 1}`;
+
+                const freqInput = createSlider('Freq', setting.freq, 20, 20000, 1, index, updateFrequency);
+                const gainInput = createSlider('Gain', setting.gain, -20, 20, 0.1, index, updateGain);
+                const qInput = createSlider('Q', setting.Q, 0.1, 10, 0.1, index, updateQ);
+
+                div.appendChild(label);
+                div.appendChild(freqInput);
+                div.appendChild(gainInput);
+                div.appendChild(qInput);
+                sliderContainer.appendChild(div);
+            });
+        }
+
+        // スライダーを生成
+        function createSlider(name, value, min, max, step, index, onInputCallback) {
+            const container = document.createElement('span');
+            container.style.margin = '0 10px';
+
+            const label = document.createElement('span');
+            label.innerText = `${name}: ${value}`;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = min;
+            input.max = max;
+            input.step = step;
+            input.value = value;
+            input.dataset.index = index;
+            input.dataset.name = name;
+            input.addEventListener('input', (event) => {
+                label.innerText = `${name}: ${event.target.value}`;
+                onInputCallback(event);
+            });
+
+            container.appendChild(label);
+            container.appendChild(input);
+            return container;
+        }
+
+        // 各スライダーのコールバック関数
+        function updateFrequency(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].frequency.value = event.target.value;
+        }
+
+        function updateGain(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].gain.value = event.target.value;
+        }
+
+        function updateQ(event) {
+            const index = event.target.dataset.index;
+            biquadFilters[index].Q.value = event.target.value;
+        }
+
+        // 動画ファイル読み込みの初期化
         function init() {
             var fileInput = document.getElementById("fileInput");
             fileInput.addEventListener("change", function (event) {
