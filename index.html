@@ -20,6 +20,10 @@
         input[type="number"] {
             width: 80px;
         }
+        #youtubePlayer {
+            width: 640px;
+            height: 360px;
+        }
     </style>
 </head>
 <body>
@@ -27,6 +31,12 @@
     <input type="text" id="youtubeUrl" placeholder="YouTube URLを入力" size="50">
     <button onclick="loadAudio()">音声を読み込む</button>
     <br><br>
+
+    <!-- YouTubeの埋め込みプレーヤー -->
+    <div>
+        <iframe id="youtubePlayer" width="640" height="360" frameborder="0" allowfullscreen></iframe>
+    </div>
+    
     <audio id="audio" controls></audio>
 
     <h2>プリアンプ設定</h2>
@@ -60,6 +70,10 @@
             }
 
             try {
+                const videoId = getYouTubeVideoId(url);
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+                document.getElementById('youtubePlayer').src = embedUrl; // YouTube動画を埋め込む
+
                 const response = await fetch(`http://localhost:3000/getAudio?url=${encodeURIComponent(url)}`);
                 const data = await response.json();
                 const audioUrl = data.audioUrl;
@@ -73,6 +87,13 @@
                 alert('音声の取得に失敗しました');
                 console.error(error);
             }
+        }
+
+        // YouTubeのURLから動画IDを抽出する関数
+        function getYouTubeVideoId(url) {
+            const regex = /(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n\s]+\/[^\n\s]+|(?:v|e(?:mbed)?)\/([^\n\s&?]+)|\S*\?v=([^&\n\s]+)))/;
+            const match = url.match(regex);
+            return match ? match[1] || match[2] : null;
         }
 
         // Web Audio APIの初期化
