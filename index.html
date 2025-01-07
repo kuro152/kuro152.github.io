@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube音声イコライザー</title>
+    <title>YouTube音声イコライザーとプリアンプ</title>
     <style>
         body {
             background-color: #000;
@@ -23,17 +23,21 @@
     </style>
 </head>
 <body>
-    <h1>YouTube音声イコライザー</h1>
+    <h1>YouTube音声イコライザーとプリアンプ</h1>
     <input type="text" id="youtubeUrl" placeholder="YouTube URLを入力" size="50">
     <button onclick="loadAudio()">音声を読み込む</button>
     <br><br>
     <audio id="audio" controls></audio>
+
+    <h2>プリアンプ設定</h2>
+    <div id="preampSlider"></div>
 
     <h2>イコライザー設定</h2>
     <div id="sliders"></div>
 
     <script>
         let audioContext, audioElement, sourceNode, biquadFilters = [];
+        let gainNode;  // プリアンプ用のGainNode
         const defaultSettings = [
             { freq: 31, gain: 0, Q: 1 },
             { freq: 63, gain: 0, Q: 1 },
@@ -57,16 +61,14 @@
 
             try {
                 const response = await fetch(`http://localhost:3000/getAudio?url=${encodeURIComponent(url)}`);
-                const audioUrl = await response.blob();
+                const data = await response.json();
+                const audioUrl = data.audioUrl;
 
-                // 音声データをURLに変換
-                const audioObjectUrl = URL.createObjectURL(audioUrl);
-
-                // <audio> 要素に音声URLを設定
                 audioElement = document.getElementById('audio');
-                audioElement.src = audioObjectUrl;
+                audioElement.src = audioUrl;
                 initAudioProcessing();
                 createControlSliders();
+                createPreampSlider();  // プリアンプのスライダーを作成
             } catch (error) {
                 alert('音声の取得に失敗しました');
                 console.error(error);
@@ -77,6 +79,9 @@
         function initAudioProcessing() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             sourceNode = audioContext.createMediaElementSource(audioElement);
+
+            gainNode = audioContext.createGain();  // プリアンプ用のGainNodeを作成
+
             create10BandEqualizer();
             connectEqualizer(sourceNode);
         }
@@ -99,14 +104,40 @@
 
         // イコライザーを接続
         function connectEqualizer(sourceNode) {
-            sourceNode.connect(biquadFilters[0]);
+            sourceNode.connect(gainNode);  // プリアンプを先に接続
+            gainNode.connect(biquadFilters[0]);  // イコライザーの最初に接続
             biquadFilters[biquadFilters.length - 1].connect(audioContext.destination);
+        }
+
+        // プリアンプ用のスライダーを作成
+        function createPreampSlider() {
+            const preampContainer = document.getElementById('preampSlider');
+            preampContainer.innerHTML = '';  // 既存のスライダーをクリア
+
+            const div = document.createElement('div');
+            div.className = 'slider-container';
+
+            const label = document.createElement('span');
+            label.className = 'slider-label';
+            label.innerText = 'Preamp Gain';
+
+            const gainInput = createSlider('Gain', 0, -40, 40, 0.1, 0, updatePreampGain);
+
+            div.appendChild(label);
+            div.appendChild(gainInput);
+            preampContainer.appendChild(div);
+        }
+
+        // プリアンプのゲインを更新
+        function updatePreampGain(event) {
+            const value = event.target.value;
+            gainNode.gain.value = value;  // プリアンプのゲインを更新
         }
 
         // コントロールスライダーを作成
         function createControlSliders() {
             const sliderContainer = document.getElementById('sliders');
-            sliderContainer.innerHTML = ''; // 既存のスライダーをクリア
+            sliderContainer.innerHTML = '';  // 既存のスライダーをクリア
 
             defaultSettings.forEach((setting, index) => {
                 const div = document.createElement('div');
