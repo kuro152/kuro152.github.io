@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube音声イコライザ</title>
+    <title>YouTube音声イコライザー</title>
     <style>
         body {
             background-color: #000;
@@ -57,22 +57,16 @@
 
             try {
                 const response = await fetch(`http://localhost:3000/getAudio?url=${encodeURIComponent(url)}`);
-                const data = await response.json();
-                const audioUrl = data.audioUrl;
+                const audioUrl = await response.blob();
 
-                console.log("Audio URL: ", audioUrl);  // URLが正しいか確認
+                // 音声データをURLに変換
+                const audioObjectUrl = URL.createObjectURL(audioUrl);
 
+                // <audio> 要素に音声URLを設定
                 audioElement = document.getElementById('audio');
-                audioElement.src = audioUrl;
-
-                // 音声がロードされたら再生
-                audioElement.addEventListener('canplay', () => {
-                    audioElement.play();  // 音声の再生
-                });
-
+                audioElement.src = audioObjectUrl;
                 initAudioProcessing();
                 createControlSliders();
-
             } catch (error) {
                 alert('音声の取得に失敗しました');
                 console.error(error);
