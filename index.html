@@ -62,6 +62,7 @@
 
                 audioElement = document.getElementById('audio');
                 audioElement.src = audioUrl;
+                audioElement.play();  // 音声が自動的に再生されるようにする
                 initAudioProcessing();
                 createControlSliders();
             } catch (error) {
@@ -73,9 +74,16 @@
         // Web Audio APIの初期化
         function initAudioProcessing() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            sourceNode = audioContext.createMediaElementSource(audioElement);
-            create10BandEqualizer();
-            connectEqualizer(sourceNode);
+
+            // ユーザーの操作で音声が初めて再生されるまでAudioContextを開始しないとエラーになる
+            audioContext.resume().then(() => {
+                console.log("AudioContext resumed");
+
+                // ソースノードの作成
+                sourceNode = audioContext.createMediaElementSource(audioElement);
+                create10BandEqualizer();
+                connectEqualizer(sourceNode);
+            });
         }
 
         // 10バンドイコライザーを作成
