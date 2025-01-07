@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube音声イコライザー</title>
+    <title>YouTube音声イコライザ</title>
     <style>
         body {
             background-color: #000;
@@ -64,7 +64,11 @@
 
                 audioElement = document.getElementById('audio');
                 audioElement.src = audioUrl;
-                audioElement.play();  // 音声が再生されるか確認
+
+                // 音声がロードされたら再生
+                audioElement.addEventListener('canplay', () => {
+                    audioElement.play();  // 音声の再生
+                });
 
                 initAudioProcessing();
                 createControlSliders();
