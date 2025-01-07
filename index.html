@@ -27,11 +27,6 @@
     <input type="text" id="youtubeUrl" placeholder="YouTube URLを入力" size="50">
     <button onclick="loadAudio()">音声を読み込む</button>
     <br><br>
-
-    <!-- YouTubeの埋め込み用iframe -->
-    <iframe id="youtubePlayer" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-    
-    <br><br>
     <audio id="audio" controls></audio>
 
     <h2>イコライザー設定</h2>
@@ -65,12 +60,6 @@
                 const data = await response.json();
                 const audioUrl = data.audioUrl;
 
-                // YouTube動画を埋め込む
-                const videoId = getYouTubeVideoId(url);
-                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
-                document.getElementById('youtubePlayer').src = embedUrl;
-
-                // 音声を再生
                 audioElement = document.getElementById('audio');
                 audioElement.src = audioUrl;
                 initAudioProcessing();
@@ -79,13 +68,6 @@
                 alert('音声の取得に失敗しました');
                 console.error(error);
             }
-        }
-
-        // YouTube URLから動画IDを抽出する関数
-        function getYouTubeVideoId(url) {
-            const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|\S+\/|\S*\?v=|(?:v|e(?:mbed)?)\/))([\w\-]+)(?=\s|\?|&|#|$)/;
-            const match = url.match(regex);
-            return match ? match[1] : null;
         }
 
         // Web Audio APIの初期化
@@ -165,26 +147,22 @@
 
             container.appendChild(label);
             container.appendChild(input);
-
             return container;
         }
 
         function updateFrequency(event) {
             const index = event.target.dataset.index;
-            const value = parseFloat(event.target.value);
-            biquadFilters[index].frequency.value = value;
+            biquadFilters[index].frequency.value = event.target.value;
         }
 
         function updateGain(event) {
             const index = event.target.dataset.index;
-            const value = parseFloat(event.target.value);
-            biquadFilters[index].gain.value = value;
+            biquadFilters[index].gain.value = event.target.value;
         }
 
         function updateQ(event) {
             const index = event.target.dataset.index;
-            const value = parseFloat(event.target.value);
-            biquadFilters[index].Q.value = value;
+            biquadFilters[index].Q.value = event.target.value;
         }
     </script>
 </body>
