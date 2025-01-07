@@ -48,82 +48,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>パラメトリック・イコライザー付き動画プレイヤー</title>
-    <style>
-        body { background-color: #111; color: #fff; font-family: Arial, sans-serif; text-align: center; }
-        .controls { margin-top: 20px; }
-        input[type="range"] { width: 300px; }
-    </style>
+    <title>パラメトリックイコライザー</title>
 </head>
 <body>
-    <h1>パラメトリック・イコライザー付き動画プレイヤー</h1>
-    
-    <!-- 動画のアップロード -->
-    <input type="file" id="videoFile" accept="video/*"><br><br>
-    <video id="video" controls width="640" height="360"></video>
-
-    <!-- イコライザーのコントロール -->
-    <div class="controls">
-        <label>周波数: <span id="freqValue">1000</span> Hz</label><br>
-        <input type="range" id="frequency" min="20" max="20000" value="1000"><br><br>
-
-        <label>ゲイン: <span id="gainValue">0</span> dB</label><br>
-        <input type="range" id="gain" min="-30" max="30" value="0"><br><br>
-
-        <label>帯域幅: <span id="bandwidthValue">1.0</span> oct</label><br>
-        <input type="range" id="bandwidth" min="0.1" max="5.0" step="0.1" value="1.0">
+    <h1>パラメトリックイコライザー付きオーディオプレーヤー</h1>
+    <audio id="audio" controls>
+        <source src="your-audio-file.mp3" type="audio/mp3">
+        お使いのブラウザはaudioタグをサポートしていません。
+    </audio>
+    <div>
+        <label for="frequency">周波数 (Hz):</label>
+        <input id="frequency" type="range" min="20" max="20000" value="1000" step="10">
+    </div>
+    <div>
+        <label for="gain">ゲイン (dB):</label>
+        <input id="gain" type="range" min="-40" max="40" value="0" step="1">
+    </div>
+    <div>
+        <label for="q">Q値 (帯域幅):</label>
+        <input id="q" type="range" min="0.1" max="10" value="1" step="0.1">
     </div>
 
     <script>
-        // 要素を取得
-        const video = document.getElementById('video');
-        const fileInput = document.getElementById('videoFile');
-        const freqSlider = document.getElementById('frequency');
-        const gainSlider = document.getElementById('gain');
-        const bandwidthSlider = document.getElementById('bandwidth');
-        const freqValue = document.getElementById('freqValue');
-        const gainValue = document.getElementById('gainValue');
-        const bandwidthValue = document.getElementById('bandwidthValue');
-
-        // AudioContextとフィルターをセットアップ
+        // オーディオ要素を取得
+        const audioElement = document.getElementById('audio');
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaElementSource(video);
-        const eqFilter = audioContext.createBiquadFilter();
-        eqFilter.type = 'peaking';  // パラメトリック・イコライザー
-        eqFilter.frequency.value = 1000;  // 初期周波数
-        eqFilter.gain.value = 0;  // 初期ゲイン
-        eqFilter.Q.value = 1.0;  // 帯域幅
+        const source = audioContext.createMediaElementSource(audioElement);
 
-        // AudioContextの接続
-        source.connect(eqFilter).connect(audioContext.destination);
+        // BiquadFilterNodeを作成（パラメトリックイコライザー）
+        const biquadFilter = audioContext.createBiquadFilter();
+        biquadFilter.type = 'peaking';  // パラメトリックイコライザータイプ
+        biquadFilter.frequency.value = 1000;  // 初期周波数
+        biquadFilter.gain.value = 0;          // 初期ゲイン
+        biquadFilter.Q.value = 1;             // 初期Q値
 
-        // ファイルが選択されたときの処理
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                video.src = url;
-                video.play();
-            }
+        // オーディオノードを接続
+        source.connect(biquadFilter);
+        biquadFilter.connect(audioContext.destination);
+
+        // 周波数スライダーのイベント
+        document.getElementById('frequency').addEventListener('input', (e) => {
+            biquadFilter.frequency.value = e.target.value;
         });
 
-        // イコライザーのスライダーイベント
-        freqSlider.addEventListener('input', () => {
-            const freq = parseFloat(freqSlider.value);
-            eqFilter.frequency.value = freq;
-            freqValue.textContent = freq;
+        // ゲインスライダーのイベント
+        document.getElementById('gain').addEventListener('input', (e) => {
+            biquadFilter.gain.value = e.target.value;
         });
 
-        gainSlider.addEventListener('input', () => {
-            const gain = parseFloat(gainSlider.value);
-            eqFilter.gain.value = gain;
-            gainValue.textContent = gain;
-        });
-
-        bandwidthSlider.addEventListener('input', () => {
-            const bandwidth = parseFloat(bandwidthSlider.value);
-            eqFilter.Q.value = bandwidth;
-            bandwidthValue.textContent = bandwidth;
+        // Q値スライダーのイベント
+        document.getElementById('q').addEventListener('input', (e) => {
+            biquadFilter.Q.value = e.target.value;
         });
     </script>
 </body>
