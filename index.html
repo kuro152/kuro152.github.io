@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube音声イコライザーとプリアンプ</title>
+    <title>YouTube音声イコライザー</title>
     <style>
         body {
             background-color: #000;
@@ -20,34 +20,25 @@
         input[type="number"] {
             width: 80px;
         }
-        #youtubePlayer {
-            width: 640px;
-            height: 360px;
-        }
     </style>
 </head>
 <body>
-    <h1>YouTube音声イコライザーとプリアンプ</h1>
+    <h1>YouTube音声イコライザー</h1>
     <input type="text" id="youtubeUrl" placeholder="YouTube URLを入力" size="50">
     <button onclick="loadAudio()">音声を読み込む</button>
     <br><br>
 
-    <!-- YouTubeの埋め込みプレーヤー -->
-    <div>
-        <iframe id="youtubePlayer" width="640" height="360" frameborder="0" allowfullscreen></iframe>
-    </div>
+    <!-- YouTubeの埋め込み用iframe -->
+    <iframe id="youtubePlayer" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     
+    <br><br>
     <audio id="audio" controls></audio>
-
-    <h2>プリアンプ設定</h2>
-    <div id="preampSlider"></div>
 
     <h2>イコライザー設定</h2>
     <div id="sliders"></div>
 
     <script>
         let audioContext, audioElement, sourceNode, biquadFilters = [];
-        let gainNode;  // プリアンプ用のGainNode
         const defaultSettings = [
             { freq: 31, gain: 0, Q: 1 },
             { freq: 63, gain: 0, Q: 1 },
@@ -70,39 +61,37 @@
             }
 
             try {
-                const videoId = getYouTubeVideoId(url);
-                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
-                document.getElementById('youtubePlayer').src = embedUrl; // YouTube動画を埋め込む
-
                 const response = await fetch(`http://localhost:3000/getAudio?url=${encodeURIComponent(url)}`);
                 const data = await response.json();
                 const audioUrl = data.audioUrl;
 
+                // YouTube動画を埋め込む
+                const videoId = getYouTubeVideoId(url);
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+                document.getElementById('youtubePlayer').src = embedUrl;
+
+                // 音声を再生
                 audioElement = document.getElementById('audio');
                 audioElement.src = audioUrl;
                 initAudioProcessing();
                 createControlSliders();
-                createPreampSlider();  // プリアンプのスライダーを作成
             } catch (error) {
                 alert('音声の取得に失敗しました');
                 console.error(error);
             }
         }
 
-        // YouTubeのURLから動画IDを抽出する関数
+        // YouTube URLから動画IDを抽出する関数
         function getYouTubeVideoId(url) {
-            const regex = /(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n\s]+\/[^\n\s]+|(?:v|e(?:mbed)?)\/([^\n\s&?]+)|\S*\?v=([^&\n\s]+)))/;
+            const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|\S+\/|\S*\?v=|(?:v|e(?:mbed)?)\/))([\w\-]+)(?=\s|\?|&|#|$)/;
             const match = url.match(regex);
-            return match ? match[1] || match[2] : null;
+            return match ? match[1] : null;
         }
 
         // Web Audio APIの初期化
         function initAudioProcessing() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             sourceNode = audioContext.createMediaElementSource(audioElement);
-
-            gainNode = audioContext.createGain();  // プリアンプ用のGainNodeを作成
-
             create10BandEqualizer();
             connectEqualizer(sourceNode);
         }
@@ -125,40 +114,14 @@
 
         // イコライザーを接続
         function connectEqualizer(sourceNode) {
-            sourceNode.connect(gainNode);  // プリアンプを先に接続
-            gainNode.connect(biquadFilters[0]);  // イコライザーの最初に接続
+            sourceNode.connect(biquadFilters[0]);
             biquadFilters[biquadFilters.length - 1].connect(audioContext.destination);
-        }
-
-        // プリアンプ用のスライダーを作成
-        function createPreampSlider() {
-            const preampContainer = document.getElementById('preampSlider');
-            preampContainer.innerHTML = '';  // 既存のスライダーをクリア
-
-            const div = document.createElement('div');
-            div.className = 'slider-container';
-
-            const label = document.createElement('span');
-            label.className = 'slider-label';
-            label.innerText = 'Preamp Gain';
-
-            const gainInput = createSlider('Gain', 0, -40, 40, 0.1, 0, updatePreampGain);
-
-            div.appendChild(label);
-            div.appendChild(gainInput);
-            preampContainer.appendChild(div);
-        }
-
-        // プリアンプのゲインを更新
-        function updatePreampGain(event) {
-            const value = event.target.value;
-            gainNode.gain.value = value;  // プリアンプのゲインを更新
         }
 
         // コントロールスライダーを作成
         function createControlSliders() {
             const sliderContainer = document.getElementById('sliders');
-            sliderContainer.innerHTML = '';  // 既存のスライダーをクリア
+            sliderContainer.innerHTML = ''; // 既存のスライダーをクリア
 
             defaultSettings.forEach((setting, index) => {
                 const div = document.createElement('div');
@@ -202,22 +165,26 @@
 
             container.appendChild(label);
             container.appendChild(input);
+
             return container;
         }
 
         function updateFrequency(event) {
             const index = event.target.dataset.index;
-            biquadFilters[index].frequency.value = event.target.value;
+            const value = parseFloat(event.target.value);
+            biquadFilters[index].frequency.value = value;
         }
 
         function updateGain(event) {
             const index = event.target.dataset.index;
-            biquadFilters[index].gain.value = event.target.value;
+            const value = parseFloat(event.target.value);
+            biquadFilters[index].gain.value = value;
         }
 
         function updateQ(event) {
             const index = event.target.dataset.index;
-            biquadFilters[index].Q.value = event.target.value;
+            const value = parseFloat(event.target.value);
+            biquadFilters[index].Q.value = value;
         }
     </script>
 </body>
